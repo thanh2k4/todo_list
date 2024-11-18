@@ -1,0 +1,39 @@
+.add-task-container {
+    max-width: 600px;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.add-task-header {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.add-task-form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.add-task-input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    flex: 1;
+}
+
+.add-task-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.add-task-button:hover {
+    background-color: #45a049;
+}
