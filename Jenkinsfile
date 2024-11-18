@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-repo/todolist-app.git'
+                git 'https://github.com/thanh2k4/todo_list'
             }
         }
         stage('Build and Test Frontend') {
