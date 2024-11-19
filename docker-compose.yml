@@ -1,38 +1,34 @@
-version: "3.8"
+version: '3.9'
+
 services:
   frontend:
-    build:
-      context: ./todo-frontend
+    build: ./todo-frontend
     ports:
-      - "3000:3000"
+      - "80:80"
     depends_on:
       - backend
-    networks:
-      - app-network
 
   backend:
-    build:
-      context: ./todo-backend
+    build: ./todo-backend
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: '0'
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - db
-    networks:
-      - app-network
 
   db:
-    image: mysql:8.0-debian
+    image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: '0'
       MYSQL_DATABASE: todo_list
-    ports:
-      - "3306:3306"
-    networks:
-      - app-network
+      MYSQL_USER: root
+      MYSQL_PASSWORD: '0'
+    volumes:
+      - mysql-data:/var/lib/mysql
 
-networks:
-  app-network:
+volumes:
+  mysql-data:
