@@ -3,7 +3,7 @@ import { listTask, deleteTask, updateTask } from '../../services/TaskService';
 import AddTask from '../AddTask/AddTask';
 import './ListTask.css';
 
-export const ListTask = () => {
+const ListTask = () => {
     const [tasks, setTasks] = useState([]);
 
     const fetchTasks = () => {
@@ -72,3 +72,5 @@ export const ListTask = () => {
         </div>
     );
 };
+
+export default ListTask;

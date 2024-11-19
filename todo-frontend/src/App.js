@@ -1,5 +1,5 @@
 import React from 'react';
-import { ListTask } from './components/ListTask/ListTask';
+import ListTask from './components/ListTask/ListTask';
 
 
 const App = () => {
