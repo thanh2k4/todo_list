@@ -1,6 +1,7 @@
 package com.example.todo_backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,23 +9,29 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.example.todo_backend.model.Task;
 import com.example.todo_backend.repository.TaskRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class TodoServiceTest {
+
     @Mock
-    private TaskService taskService;
+    private TaskRepository taskRepository;
 
     @InjectMocks
-    private TaskRepository taskRepository;
+    private TaskService taskService;
+
+    @BeforeEach
+    public void setup() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     public void testGetAllTasks() {
@@ -65,8 +72,8 @@ public class TodoServiceTest {
 
     @Test
     public void testDeleteTask() {
-        Task task = new Task(1L, "Task 1", false);
+        doNothing().when(taskRepository).deleteById(1L);
         taskService.deleteTask(1L);
-        verify(taskRepository, times(1)).delete(task);
+        verify(taskRepository, times(1)).deleteById(1L);
     }
 }
