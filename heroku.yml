@@ -1,0 +1,15 @@
+setup:
+  addons:
+    - plan: jawsdb:kitefin
+      as: DATABASE
+
+build:
+  docker:
+    web: ./todo-backend/Dockerfile
+
+run:
+  web: java -jar /app.jar
+
+config:
+  SPRING_DATASOURCE_URL: ${JAWSDB_URL}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
