@@ -6,9 +6,11 @@ setup:
 build:
   docker:
     web: ./todo-backend/Dockerfile
+    worker: ./todo-frontend/Dockerfile
 
 run:
   web: java -jar /app.jar
+  worker: nginx -g 'daemon off;'
 
 config:
   SPRING_DATASOURCE_URL: ${JAWSDB_URL}
