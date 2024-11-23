@@ -58,11 +58,12 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '22'
+        node-version: '20'
 
     - name: Build and test frontend
       run: |
         cd todo-frontend
+        rm -rf node_modules
         npm ci
         npm run build
         npm test
