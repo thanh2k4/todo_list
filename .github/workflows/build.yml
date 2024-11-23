@@ -63,6 +63,6 @@ jobs:
     - name: Build and test frontend
       run: |
         cd todo-frontend
-        npm install --prefer-offline --no-audit
+        npm ci
         npm run build
         npm test
