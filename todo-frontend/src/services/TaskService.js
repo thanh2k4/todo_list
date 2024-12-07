@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const REST_API_URL = 'http://localhost:8080/api/tasks';
+const REST_API_URL = process.env.BASE_API || 'http://localhost:3000/api/tasks';
 
 export const listTask = async () => await axios.get(REST_API_URL);
 

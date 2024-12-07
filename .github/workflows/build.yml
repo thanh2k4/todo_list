@@ -66,3 +66,14 @@ jobs:
         npm install
         npm run build
         npm test
+    - name: Replace .env variables in frontend
+      run: |
+        echo "BASE_API=${{ secrets.BASE_API }}" > todo-frontend/.env
+      working-directory: todo-frontend
+
+    - name: Replace .env variables in backend
+      run: |
+        echo "DB_URL=${{ secrets.DB_URL }}" > todo-backend/.env
+        echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> todo-backend/.env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> todo-backend/.env
+      working-directory: todo-backend
