@@ -6,6 +6,7 @@ const AddTask = ({ onTaskAdded }) => {
     const [taskTitle, setTaskTitle] = useState("");
 
     const handleSubmit = (e) => {
+        console.log(process.env.REACT_APP_BASE_API);
         e.preventDefault();
         const task = {
             title: taskTitle,

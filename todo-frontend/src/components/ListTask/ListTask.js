@@ -13,6 +13,7 @@ const ListTask = () => {
     };
 
     const addNewTask = (newTask) => {
+
         setTasks([...tasks, newTask]);
     };
 
