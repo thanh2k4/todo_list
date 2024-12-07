@@ -66,14 +66,32 @@ jobs:
         npm install
         npm run build
         npm test
-    - name: Replace .env variables in frontend
-      run: |
-        cd todo-frontend
-        echo "BASE_API=${{ secrets.BASE_API }}" > .env
+jobs:
+  deploy:
+  needs: build-and-test
+  runs-on: ubuntu-latest
 
-    - name: Replace .env variables in backend
-      run: |
-        cd todo-backend
-        echo "DB_URL=${{ secrets.DB_URL }}" > .env
-        echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy Backend to Heroku
+      uses: akhileshns/heroku-deploy@v3.12.14
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: "todo-backend-thanh2k4"
+        heroku_email: "nvthanh12102004@gmail.com"
+        working-directory: ./todo-backend
+      env:
+        DB_URL: ${{ secrets.DB_URL }}
+        DB_USERNAME : ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD : ${{ secrets.DB_PASSWORD }}
+
+    - name: Deploy Frontend to Vercel
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-name: todo-list
+        working-directory: ./todo-frontend
+      env:
+        REACT_APP_BASE_API: ${{ secrets.REACT_APP_BASE_API }}
