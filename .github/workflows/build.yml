@@ -47,6 +47,13 @@ jobs:
         SPRING_DATASOURCE_USERNAME: root
         SPRING_DATASOURCE_PASSWORD: '0'
 
+    - name: Wait for MySQL to be ready
+      run: |
+        while ! mysqladmin ping -h"localhost" --silent; do
+          echo "Waiting for MySQL to be ready..."
+          sleep 2
+        done
+
     - name: Cache Node.js modules
       uses: actions/cache@v4
       with:
@@ -66,10 +73,17 @@ jobs:
         npm install
         npm run build
         npm test
+
+    - name: Ensure todo-frontend directory exists
+      run: mkdir -p todo-frontend
+
     - name: Replace .env variables in frontend
       run: |
         echo "BASE_API=${{ secrets.BASE_API }}" > todo-frontend/.env
       working-directory: todo-frontend
+
+    - name: Ensure todo-backend directory exists
+      run: mkdir -p todo-backend
 
     - name: Replace .env variables in backend
       run: |
