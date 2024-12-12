@@ -14,8 +14,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v2
+      uses: dawidd6/action-download-artifact@v7
       with:
+        workflow: "Build and test"
         name: build-artifacts
 
     - name: Deploy to Docker
