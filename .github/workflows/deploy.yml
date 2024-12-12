@@ -19,6 +19,11 @@ jobs:
         workflow: build-test.yml
         name: build-artifacts
 
+    - name: Set up Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose  
+
     - name: Deploy to Docker
       run: |
         docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
