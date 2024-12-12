@@ -1,22 +1,3 @@
-  # deploy:
-  #   needs: build-and-test
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #   - uses: actions/checkout@v4
-
-  #   - name: Deploy Backend to Heroku
-  #     uses: akhileshns/heroku-deploy@v3.13.15
-  #     with:
-  #       heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-  #       heroku_app_name: "todo-backend-thanh2k4"
-  #       heroku_email: "nvthanh12102004@gmail.com"
-  #       appdir: "todo-backend"
-  #     env:
-  #       DB_URL: ${{ secrets.DB_URL }}
-  #       DB_USERNAME : ${{ secrets.DB_USERNAME }}
-  #       DB_PASSWORD : ${{ secrets.DB_PASSWORD }}
-
 name: Deploy
 
 on:
@@ -33,7 +14,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: build-artifacts
 
