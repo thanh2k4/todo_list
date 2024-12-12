@@ -22,13 +22,8 @@ jobs:
     - name: Deploy to Docker
       run: |
         docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-        docker build -t todo-app-backend:latest ./todo-backend
-        docker build -t todo-app-frontend:latest ./todo-frontend
-        docker tag todo-app-backend:latest ${{ secrets.DOCKER_USERNAME }}/todo-app-backend:latest
-        docker tag todo-app-frontend:latest ${{ secrets.DOCKER_USERNAME }}/todo-app-frontend:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/todo-app-backend:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/todo-app-frontend:latest
-
+        docker-compose -f docker-compose.yml build
+        docker-compose -f docker-compose.yml push
 
     - name: Deploy Backend to Heroku
       uses: akhileshns/heroku-deploy@v3.13.15
