@@ -16,7 +16,7 @@ jobs:
     - name: Download build artifacts
       uses: dawidd6/action-download-artifact@v7
       with:
-        workflow: build.yml
+        workflow: build-test.yml
         name: build-artifacts
 
     - name: Deploy to Docker
