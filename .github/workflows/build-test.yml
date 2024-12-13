@@ -89,10 +89,12 @@ jobs:
           todo-frontend/build/**
         if-no-files-found: error
 
+    - name: Save change type
+      run: echo "${{ steps.change-type.outputs.change_type }}" > change-type.txt
+
     - name: Upload change type
       uses: actions/upload-artifact@v4
       with:
         name: change-type
         path: change-type.txt
-      run: echo "${{ steps.change-type.outputs.change_type }}" > change-type.txt
 

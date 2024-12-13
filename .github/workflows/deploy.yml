@@ -32,8 +32,6 @@ jobs:
     - name: Set up Docker Compose
       run: |
         sudo apt-get update
-        sudo apt remove containerd
-        sudo apt remove containerd.io
         sudo apt-get install -y docker-compose  
 
     - name: Deploy to Docker (Init or Feature)
