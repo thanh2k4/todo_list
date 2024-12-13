@@ -37,6 +37,19 @@ jobs:
         java-version: '21'
         distribution: 'adopt'
 
+    - name: Determine change type
+      id: change-type
+      run: |
+        if git log -1 --pretty=%B | grep -q "init"; then
+          echo "change_type=init" >> $GITHUB_OUTPUT
+        elif git log -1 --pretty=%B | grep -q "feature"; then
+          echo "change_type=feature" >> $GITHUB_OUTPUT
+        elif git diff --name-only HEAD^ HEAD | grep -q "pom.xml\|package.json"; then
+          echo "change_type=dependency" >> $GITHUB_OUTPUT
+        else
+          echo "change_type=other" >> $GITHUB_OUTPUT
+        fi
+
     - name: Build and test backend
       run: |
         cd todo-backend
@@ -74,6 +87,12 @@ jobs:
         path: |
           todo-backend/target/*.jar
           todo-frontend/build/**
+        if-no-files-found: error
 
-
+    - name: Upload change type
+      uses: actions/upload-artifact@v4
+      with:
+        name: change-type
+        path: change-type.txt
+      run: echo "${{ steps.change-type.outputs.change_type }}" > change-type.txt
 
