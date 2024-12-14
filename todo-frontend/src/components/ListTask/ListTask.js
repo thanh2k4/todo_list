@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { deleteTask, updateTask, getTasksByUser } from '../../services/TaskService';
+import { listTask, deleteTask, updateTask, getTasksByUser } from '../../services/TaskService';
 import AddTask from '../AddTask/AddTask';
 import './ListTask.css';
 
@@ -7,7 +7,7 @@ const ListTask = () => {
     const [tasks, setTasks] = useState([]);
 
     const fetchTasks = () => {
-        getTasksByUser().then((response) => {
+        listTask().then((response) => {
             if (response.data) {
                 setTasks(response.data);
             }
