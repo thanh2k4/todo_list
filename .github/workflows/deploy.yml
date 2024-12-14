@@ -91,7 +91,7 @@ jobs:
         heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
         heroku_app_name: "todo-backend-thanh2k4"
         heroku_email: "nvthanh12102004@gmail.com"
-        appdir: "./todo-backend"
+        appdir: "todo-backend"
       env:
         DB_URL: ${{ secrets.DB_URL }}
         DB_USERNAME : ${{ secrets.DB_USERNAME }}

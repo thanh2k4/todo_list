@@ -9,7 +9,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class TodoBackendApplication {
 
 	public static void main(String[] args) {
-		Dotenv dotenv = Dotenv.configure().directory("./todo-backend").filename(".env").load();
+		Dotenv dotenv = Dotenv.configure().directory("./todo-backend").filename(".env").ignoreIfMissing().load();
 		System.setProperty("DB_URL", dotenv.get("DB_URL"));
 		System.setProperty("DB_USERNAME", dotenv.get("DB_USERNAME"));
 		System.setProperty("DB_PASSWORD", dotenv.get("DB_PASSWORD"));
