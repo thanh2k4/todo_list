@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { listTask, deleteTask, updateTask, getTasksByUser } from '../../services/TaskService';
+import { listTask, deleteTask, updateTask } from '../../services/TaskService';
 import AddTask from '../AddTask/AddTask';
 import './ListTask.css';
 
