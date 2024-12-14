@@ -40,16 +40,19 @@ jobs:
     - name: Determine change type
       id: change-type
       run: |
-        if git log -1 --pretty=%B | grep -q "init"; then
+        if [ "$(git rev-list --count HEAD)" -eq 0 ]; then
           echo "change_type=init" >> $GITHUB_OUTPUT
-        elif git log -1 --pretty=%B | grep -q "feature"; then
-          echo "change_type=feature" >> $GITHUB_OUTPUT
-        elif git diff --name-only HEAD^ HEAD | grep -q "pom.xml\|package.json"; then
-          echo "change_type=dependency" >> $GITHUB_OUTPUT
         else
-          echo "change_type=other" >> $GITHUB_OUTPUT
+          if git diff --name-only HEAD^ HEAD | grep -Eq '^todo-(backend|frontend)/src/'; then
+            echo "change_type=feature" >> $GITHUB_OUTPUT
+          elif git diff --name-only HEAD^ HEAD | grep -Eq 'pom\.xml|package\.json'; then
+            echo "change_type=dependency" >> $GITHUB_OUTPUT
+          else
+            echo "change_type=other" >> $GITHUB_OUTPUT
+          fi
         fi
 
+  
     - name: Build and test backend
       run: |
         cd todo-backend
