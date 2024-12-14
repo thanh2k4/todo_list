@@ -7,6 +7,7 @@ services:
       - "80:80"
     depends_on:
       - backend
+    image: thanh2k4/todo_list-frontend
 
   backend:
     build: ./todo-backend
@@ -19,6 +20,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - db
+    image: thanh2k4/todo_list-backend
 
   db:
     image: mysql:latest
