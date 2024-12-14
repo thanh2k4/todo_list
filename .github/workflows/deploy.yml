@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Build and test"]
     types:
-      - completed
+      - completed && success
 
 jobs:
   deploy:
@@ -59,8 +59,6 @@ jobs:
       run: |
         cd todo-backend
         mvn versions:use-latest-versions
-        cd ../todo-frontend
-        npm update
 
     - name: Deploy Backend to Heroku (Dependency change)
       if: steps.change-type.outputs.change_type == 'dependency'
@@ -79,4 +77,3 @@ jobs:
     - name: Notify for Other Changes
       if: steps.change-type.outputs.change_type == 'other'
       run: echo "No specific deployment action for this change type. Please review manually."
-
