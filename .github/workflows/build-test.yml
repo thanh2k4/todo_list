@@ -57,7 +57,7 @@ jobs:
       run: |
         cd todo-backend
         mvn clean install
-        mvn test
+        # mvn test
       env:
         SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
         SPRING_DATASOURCE_USERNAME: root
