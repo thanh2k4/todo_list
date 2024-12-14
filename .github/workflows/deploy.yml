@@ -4,8 +4,7 @@ on:
   workflow_run:
     workflows: ["Build and test"]
     types:
-      - completed && success
-
+      - success
 jobs:
   deploy:
     runs-on: ubuntu-latest
