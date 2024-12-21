@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,10 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  # Build and test the backend and frontend
   build-and-test:
     runs-on: ubuntu-latest
-
     services:
       mysql:
         image: mysql:8.0
@@ -31,6 +29,7 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
+
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
@@ -54,6 +53,7 @@ jobs:
         key: ${{ runner.os }}-node-${{ hashFiles('**/todo-frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -66,11 +66,9 @@ jobs:
         npm run build
         npm test
 
-  # Deploy 
-  deploy:
+  deploy-docker:
     needs: build-and-test
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -84,17 +82,3 @@ jobs:
         docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
         docker-compose -f docker-compose.yml build
         docker-compose -f docker-compose.yml push
-
-    - name: Deploy Backend to Heroku
-      uses: akhileshns/heroku-deploy@v3.13.15
-      with:
-        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-        heroku_app_name: "todo-backend-thanh2k4"
-        heroku_email: "nvthanh12102004@gmail.com"
-        appdir: "todo-backend"
-      env:
-        DB_URL: ${{ secrets.DB_URL }}
-        DB_USERNAME : ${{ secrets.DB_USERNAME }}
-        DB_PASSWORD : ${{ secrets.DB_PASSWORD }}
-        CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
-    
