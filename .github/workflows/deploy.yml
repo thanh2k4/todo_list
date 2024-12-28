@@ -67,49 +67,49 @@ jobs:
         npm test
 
   
-deploy-docker:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+  deploy-docker:
+      needs: build-and-test
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Determine current environment
-      run: |
-        CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
-        NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
-        echo "CURRENT_ENV=$CURRENT_ENV" >> $GITHUB_ENV
-        echo "NEXT_ENV=$NEXT_ENV" >> $GITHUB_ENV
+      - name: Determine current environment
+        run: |
+          CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
+          NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
+          echo "CURRENT_ENV=$CURRENT_ENV" >> $GITHUB_ENV
+          echo "NEXT_ENV=$NEXT_ENV" >> $GITHUB_ENV
 
-    - name: Build and push Docker images
-      run: |
-        docker-compose -f docker-compose.${NEXT_ENV}.yml build
-        docker-compose -f docker-compose.${NEXT_ENV}.yml push
+      - name: Build and push Docker images
+        run: |
+          docker-compose -f docker-compose.${NEXT_ENV}.yml build
+          docker-compose -f docker-compose.${NEXT_ENV}.yml push
 
-    - name: Deploy the next environment
-      run: |
-        docker-compose -f docker-compose.${NEXT_ENV}.yml up -d
-        if [ $? -eq 0 ]; then
-          echo "Deployment of $NEXT_ENV was successful."
-          echo "$NEXT_ENV" > current_env.txt
-        else
-          echo "Deployment failed. Keeping the current environment as $CURRENT_ENV."
-          echo "$CURRENT_ENV" > current_env.txt
-        fi
+      - name: Deploy the next environment
+        run: |
+          docker-compose -f docker-compose.${NEXT_ENV}.yml up -d
+          if [ $? -eq 0 ]; then
+            echo "Deployment of $NEXT_ENV was successful."
+            echo "$NEXT_ENV" > current_env.txt
+          else
+            echo "Deployment failed. Keeping the current environment as $CURRENT_ENV."
+            echo "$CURRENT_ENV" > current_env.txt
+          fi
 
-    - name: Upload environment artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: current-env
-        path: current_env.txt
+      - name: Upload environment artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: current-env
+          path: current_env.txt
 
   post-deploy:
     needs: deploy-docker
