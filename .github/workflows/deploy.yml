@@ -107,6 +107,7 @@ jobs:
     - name: Deploy to server
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
+        CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
@@ -114,7 +115,18 @@ jobs:
         echo "DB_USER=$DB_USER" >> .env
         echo "DB_PASSWORD=$DB_PASSWORD" >> .env
         echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
+        
+        # Start the new environment
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
+        
+        # Update Nginx configuration
+        sed -i 's/server frontend-'$CURRENT_ENV':80;/server frontend-'$CURRENT_ENV':80 backup;/' nginx.conf
+        sed -i 's/server frontend-'$NEXT_ENV':80 backup;/server frontend-'$NEXT_ENV':80;/' nginx.conf
+        sed -i 's/server backend-'$CURRENT_ENV':8080;/server backend-'$CURRENT_ENV':8080 backup;/' nginx.conf
+        sed -i 's/server backend-'$NEXT_ENV':8080 backup;/server backend-'$NEXT_ENV':8080;/' nginx.conf
+        
+        # Reload Nginx configuration
+        docker exec nginx nginx -s reload
 
     - name: Update current environment
       if: success()
@@ -127,8 +139,18 @@ jobs:
       if: failure()
       env:
         CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
+        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
       run: |
         docker compose -f docker-compose.$CURRENT_ENV.yml up -d
+        
+        # Revert Nginx configuration
+        sed -i 's/server frontend-'$CURRENT_ENV':80 backup;/server frontend-'$CURRENT_ENV':80;/' nginx.conf
+        sed -i 's/server frontend-'$NEXT_ENV':80;/server frontend-'$NEXT_ENV':80 backup;/' nginx.conf
+        sed -i 's/server backend-'$CURRENT_ENV':8080 backup;/server backend-'$CURRENT_ENV':8080;/' nginx.conf
+        sed -i 's/server backend-'$NEXT_ENV':80;/server backend-'$NEXT_ENV':80 backup;/' nginx.conf
+        
+        # Reload Nginx configuration
+        docker exec nginx nginx -s reload
 
     - name: Clean up old environment
       if: success()
@@ -136,3 +158,4 @@ jobs:
         CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
       run: |
         docker compose -f docker-compose.$CURRENT_ENV.yml down
+
