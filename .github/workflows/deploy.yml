@@ -105,11 +105,11 @@ jobs:
           echo "$CURRENT_ENV" > current_env.txt
         fi
 
-      - name: Upload environment artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: current-env
-          path: current_env.txt
+    - name: Upload environment artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: current-env
+        path: current_env.txt
 
   post-deploy:
     needs: deploy-docker
