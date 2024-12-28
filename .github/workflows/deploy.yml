@@ -22,20 +22,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'adopt'
-
     - name: Build and test backend
       run: |
         cd todo-backend
@@ -45,19 +31,6 @@ jobs:
         SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
         SPRING_DATASOURCE_USERNAME: root
         SPRING_DATASOURCE_PASSWORD: '0'
-
-    - name: Cache Node.js modules
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/todo-frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
 
     - name: Build and test frontend
       run: |
@@ -72,13 +45,29 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Docker Compose
+    - name: Determine current and next environment
       run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
+        CURRENT_ENV=$(echo "blue")
+        if [ -f env.state ]; then
+          CURRENT_ENV=$(cat env.state)
+        fi
+        NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
+        echo "CURRENT_ENV=$CURRENT_ENV" >> $GITHUB_ENV
+        echo "NEXT_ENV=$NEXT_ENV" >> $GITHUB_ENV
 
-    - name: Deploy to Docker Hub
+    - name: Deploy the new environment
       run: |
-        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-        docker-compose -f docker-compose.yml build
-        docker-compose -f docker-compose.yml push
+        docker-compose -f docker-compose.${NEXT_ENV}.yml up -d
+
+    - name: Save artifact for current environment
+      run: echo "$NEXT_ENV" > current_env.txt
+
+    - name: Upload current environment artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: current-env
+        path: current_env.txt
+
+    - name: Cleanup old environment
+      run: |
+        docker-compose -f docker-compose.${CURRENT_ENV}.yml down
