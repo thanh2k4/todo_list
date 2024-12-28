@@ -65,35 +65,70 @@ jobs:
         npm install
         npm run build
         npm test
-  deploy-docker:
+
+  
+deploy-docker:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
-    - name: Determine current and next environment
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Determine current environment
       run: |
-        CURRENT_ENV=$(echo "blue")
-        if [ -f env.state ]; then
-          CURRENT_ENV=$(cat env.state)
-        fi
+        CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
         NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
         echo "CURRENT_ENV=$CURRENT_ENV" >> $GITHUB_ENV
         echo "NEXT_ENV=$NEXT_ENV" >> $GITHUB_ENV
 
-    - name: Deploy the new environment
+    - name: Build and push Docker images
+      run: |
+        docker-compose -f docker-compose.${NEXT_ENV}.yml build
+        docker-compose -f docker-compose.${NEXT_ENV}.yml push
+
+    - name: Deploy the next environment
       run: |
         docker-compose -f docker-compose.${NEXT_ENV}.yml up -d
+        if [ $? -eq 0 ]; then
+          echo "Deployment of $NEXT_ENV was successful."
+          echo "$NEXT_ENV" > current_env.txt
+        else
+          echo "Deployment failed. Keeping the current environment as $CURRENT_ENV."
+          echo "$CURRENT_ENV" > current_env.txt
+        fi
 
-    - name: Save artifact for current environment
-      run: echo "$NEXT_ENV" > current_env.txt
-
-    - name: Upload current environment artifact
+    - name: Upload environment artifact
       uses: actions/upload-artifact@v3
       with:
         name: current-env
         path: current_env.txt
 
-    - name: Cleanup old environment
+  post-deploy:
+    needs: deploy-docker
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download current environment artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: current-env
+
+    - name: Read current environment and perform health check
       run: |
-        docker-compose -f docker-compose.${CURRENT_ENV}.yml down
+        CURRENT_ENV=$(cat current_env.txt)
+        echo "Current environment is: $CURRENT_ENV"
+        echo "CURRENT_ENV=$CURRENT_ENV" >> $GITHUB_ENV
+
+    - name: Clean up old environment
+      run: |
+        OLD_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
+        docker-compose -f docker-compose.${OLD_ENV}.yml down
