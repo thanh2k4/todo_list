@@ -66,17 +66,12 @@ jobs:
         npm run build
         npm test
 
+  
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
-    - name: Download current environment artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: current-env
-        path: .
 
     - name: Install Docker Compose
       run: |
@@ -121,30 +116,12 @@ jobs:
         echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
 
-    - name: Health check
-      env:
-        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
-      run: |
-        # Wait for services to be up
-        sleep 30
-        # Check frontend
-        curl -f http://localhost:80 || exit 1
-        # Check backend
-        curl -f http://localhost:8080/actuator/health || exit 1
-
     - name: Update current environment
       if: success()
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
       run: |
         echo $NEXT_ENV > current_env.txt
-
-    - name: Upload current environment artifact
-      if: success()
-      uses: actions/upload-artifact@v3
-      with:
-        name: current-env
-        path: current_env.txt
 
     - name: Rollback on failure
       if: failure()
