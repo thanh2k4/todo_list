@@ -112,27 +112,19 @@ jobs:
         DB_PASSWORD: '0'
         MYSQL_ROOT_PASSWORD: '0'
       run: |
-        # echo "DB_USER=$DB_USER" >> .env
-        # echo "DB_PASSWORD=$DB_PASSWORD" >> .env
-        # echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
         
-        # Start the new environment
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
         
-        # Wait for Nginx container to be ready
         echo "Waiting for Nginx container to be ready..."
         timeout 60s bash -c 'until docker compose -f docker-compose.${{ steps.deployment.outputs.next_env }}.yml exec -T nginx nginx -t &> /dev/null; do sleep 1; done'
         
-        # Update Nginx configuration
         sed -i 's/server frontend-'$CURRENT_ENV':80;/server frontend-'$CURRENT_ENV':80 backup;/' nginx.conf
         sed -i 's/server frontend-'$NEXT_ENV':80 backup;/server frontend-'$NEXT_ENV':80;/' nginx.conf
         sed -i 's/server backend-'$CURRENT_ENV':8080;/server backend-'$CURRENT_ENV':8080 backup;/' nginx.conf
         sed -i 's/server backend-'$NEXT_ENV':8080 backup;/server backend-'$NEXT_ENV':8080;/' nginx.conf
         
-        # Copy updated nginx.conf to the container
         docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
         
-        # Reload Nginx configuration
         docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
 
     - name: Update current environment
@@ -150,20 +142,16 @@ jobs:
       run: |
         docker compose -f docker-compose.$CURRENT_ENV.yml up -d
         
-        # Wait for Nginx container to be ready
         echo "Waiting for Nginx container to be ready..."
         timeout 60s bash -c 'until docker compose -f docker-compose.${{ steps.deployment.outputs.current_env }}.yml exec -T nginx nginx -t &> /dev/null; do sleep 1; done'
         
-        # Revert Nginx configuration
         sed -i 's/server frontend-'$CURRENT_ENV':80 backup;/server frontend-'$CURRENT_ENV':80;/' nginx.conf
         sed -i 's/server frontend-'$NEXT_ENV':80;/server frontend-'$NEXT_ENV':80 backup;/' nginx.conf
         sed -i 's/server backend-'$CURRENT_ENV':8080 backup;/server backend-'$CURRENT_ENV':8080;/' nginx.conf
         sed -i 's/server backend-'$NEXT_ENV':80;/server backend-'$NEXT_ENV':80 backup;/' nginx.conf
         
-        # Copy updated nginx.conf to the container
         docker compose -f docker-compose.$CURRENT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
         
-        # Reload Nginx configuration
         docker compose -f docker-compose.$CURRENT_ENV.yml exec -T nginx nginx -s reload
 
     - name: Clean up old environment
