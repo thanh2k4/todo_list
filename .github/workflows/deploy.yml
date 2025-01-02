@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build-and-test:
@@ -20,104 +20,142 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'adopt'
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'adopt'
+    - name: Build and test backend
+      run: |
+        cd todo-backend
+        mvn clean install
+        mvn test
+      env:
+        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: '0'
 
-      - name: Build and test backend
-        run: |
-          cd todo-backend
-          mvn clean install
-          mvn test
-        env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/todo_list?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: '0'
+    - name: Cache Node.js modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/todo-frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/todo-frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build and test frontend
-        run: |
-          cd todo-frontend
-          npm install
-          npm run build
-          npm test
-
+    - name: Build and test frontend
+      run: |
+        cd todo-frontend
+        npm install
+        npm run build
+        npm test
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Install Docker Compose
-        run: |
-          LATEST_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)
-          mkdir -p ~/.docker/cli-plugins/
-          curl -SL "https://github.com/docker/compose/releases/download/$LATEST_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
+    - name: Install Docker Compose
+      run: |
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)
+        mkdir -p ~/.docker/cli-plugins/
+        curl -SL "https://github.com/docker/compose/releases/download/$LATEST_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o ~/.docker/cli-plugins/docker-compose
+        chmod +x ~/.docker/cli-plugins/docker-compose
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Determine deployment environment
-        id: deployment
-        run: |
-          CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
-          NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
-          echo "current_env=$CURRENT_ENV" >> $GITHUB_OUTPUT
-          echo "next_env=$NEXT_ENV" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker images
-        env:
-          NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
-        run: |
-          docker compose -f docker-compose.$NEXT_ENV.yml build
-          docker compose -f docker-compose.$NEXT_ENV.yml push
-
-      - name: Deploy to server
-        env:
-          NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
-          CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-        run: |
-          cp .env.template .env
-          sed -i "s/^DB_USER=.*/DB_USER=$DB_USER/" .env
-          sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
-          sed -i "s/^MYSQL_ROOT_PASSWORD=.*/MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD/" .env
-
-          docker compose -f docker-compose.$NEXT_ENV.yml up -d
-          timeout 300s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
-
-          docker cp nginx.conf nginx:/etc/nginx/nginx.conf
-          docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
+    - name: Determine deployment environment
+      id: deployment
+      run: |
+        CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
+        NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
+        echo "current_env=$CURRENT_ENV" >> $GITHUB_OUTPUT
+        echo "next_env=$NEXT_ENV" >> $GITHUB_OUTPUT
+    - name: Build and push Docker images
+      env:
+        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
+      run: |
+        docker compose -f docker-compose.$NEXT_ENV.yml build
+        docker compose -f docker-compose.$NEXT_ENV.yml push
+    - name: Deploy to server
+      env:
+        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
+        CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+      run: |
+        echo "DB_USER=$DB_USER" >> .env
+        echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+        echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
+        
+        # Start the new environment
+        docker compose -f docker-compose.$NEXT_ENV.yml up -d
+        
+        # Wait for all services in the new environment to be healthy
+        timeout 600s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        # Update Nginx configuration
+        sed -i 's/server frontend-$CURRENT_ENV:80;/server frontend-$CURRENT_ENV:80 backup;/' nginx.conf
+        sed -i 's/server frontend-$NEXT_ENV:80 backup;/server frontend-$NEXT_ENV:80;/' nginx.conf
+        sed -i 's/server backend-$CURRENT_ENV:8080;/server backend-$CURRENT_ENV:8080 backup;/' nginx.conf
+        sed -i 's/server backend-$NEXT_ENV:8080 backup;/server backend-$NEXT_ENV:8080;/' nginx.conf
+        
+        # Copy updated nginx.conf to the container
+        docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
+        
+        # Reload Nginx configuration
+        docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
+    - name: Update current environment
+      if: success()
+      env:
+        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
+      run: |
+        echo $NEXT_ENV > current_env.txt
+    - name: Rollback on failure
+      if: failure()
+      env:
+        CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
+        NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
+      run: |
+        docker compose -f docker-compose.$CURRENT_ENV.yml up -d
+        
+        # Wait for Nginx container to be ready
+        timeout 600s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        
+        # Revert Nginx configuration
+        sed -i 's/server frontend-$CURRENT_ENV:80 backup;/server frontend-$CURRENT_ENV:80;/' nginx.conf
+        sed -i 's/server frontend-$NEXT_ENV:80;/server frontend-$NEXT_ENV:80 backup;/' nginx.conf
+        sed -i 's/server backend-$CURRENT_ENV:8080 backup;/server backend-$CURRENT_ENV:8080;/' nginx.conf
+        sed -i 's/server backend-$NEXT_ENV:8080;/server backend-$NEXT_ENV:8080 backup;/' nginx.conf
+        
+        # Copy updated nginx.conf to the container
+        docker compose -f docker-compose.$CURRENT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
+        
+        # Reload Nginx configuration
+        docker compose -f docker-compose.$CURRENT_ENV.yml exec -T nginx nginx -s reload
+    - name: Clean up old environment
+      if: success()
+      env:
+        CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
+      run: |
+        docker compose -f docker-compose.$CURRENT_ENV.yml down
