@@ -113,7 +113,7 @@ jobs:
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
         
         # Wait for all services in the new environment to be healthy
-        timeout 600s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        timeout 120s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
         # Update Nginx configuration
         sed -i 's/server frontend-$CURRENT_ENV:80;/server frontend-$CURRENT_ENV:80 backup;/' nginx.conf
         sed -i 's/server frontend-$NEXT_ENV:80 backup;/server frontend-$NEXT_ENV:80;/' nginx.conf
@@ -140,8 +140,8 @@ jobs:
         docker compose -f docker-compose.$CURRENT_ENV.yml up -d
         
         # Wait for Nginx container to be ready
-        timeout 600s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
-        
+        timeout 120s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+
         # Revert Nginx configuration
         sed -i 's/server frontend-$CURRENT_ENV:80 backup;/server frontend-$CURRENT_ENV:80;/' nginx.conf
         sed -i 's/server frontend-$NEXT_ENV:80;/server frontend-$NEXT_ENV:80 backup;/' nginx.conf
