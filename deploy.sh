@@ -1,9 +1,8 @@
 #!/bin/bash
 
-
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-NC='\033[0m' 
+NC='\033[0m'
 
 check_health() {
     local service=$1
@@ -14,14 +13,15 @@ check_health() {
     echo "Checking health of $service-$color..."
     
     while [ $attempt -le $max_attempts ]; do
-        if docker-compose ps "$service-$color" | grep -q "Up"; then
-
+        if docker compose ps "$service-$color" | grep -q "Up"; then
             if [ "$service" = "backend" ]; then
-                if curl -s "http://localhost:8080/actuator/health" | grep -q "UP"; then
+                # Updated health check URL to include service color
+                if curl -s "http://$service-$color:8080/actuator/health" | grep -q "UP"; then
                     return 0
                 fi
             else
-                if curl -s "http://localhost:80" > /dev/null; then
+                # Updated health check URL to include service color
+                if curl -s "http://$service-$color:80" > /dev/null; then
                     return 0
                 fi
             fi
@@ -35,10 +35,9 @@ check_health() {
     return 1
 }
 
-
 switch_color() {
     local service=$1
-    local current_color=$(docker-compose ps | grep "$service-" | grep "Up" | awk '{print $1}' | cut -d'-' -f2)
+    local current_color=$(docker compose ps | grep "$service-" | grep "Up" | awk '{print $1}' | cut -d'-' -f2)
     local new_color
 
     if [ "$current_color" == "blue" ]; then
@@ -49,28 +48,27 @@ switch_color() {
 
     echo -e "${GREEN}Switching $service from $current_color to $new_color${NC}"
 
+    # Export the environment variable for nginx
+    export CURRENT_ENV=$new_color
 
-    cp nginx.conf nginx.conf.backup
+    # Use docker compose config to generate nginx config with proper environment
+    docker compose config > nginx.conf.tmp
+    mv nginx.conf.tmp nginx.conf
 
-
-    sed -i "s/$service-$current_color/$service-$new_color/" nginx.conf
-
-
-    docker-compose exec nginx nginx -s reload
-
+    # Reload nginx configuration
+    docker compose exec nginx nginx -s reload
 
     if [ $? -ne 0 ]; then
         echo -e "${RED}Failed to reload nginx. Rolling back to previous configuration...${NC}"
-        mv nginx.conf.backup nginx.conf
-        docker-compose exec nginx nginx -s reload
+        export CURRENT_ENV=$current_color
+        docker compose config > nginx.conf
+        docker compose exec nginx nginx -s reload
         return 1
     fi
 
-    rm nginx.conf.backup
     echo -e "${GREEN}$service switched to $new_color${NC}"
     return 0
 }
-
 
 deploy() {
     local service=$1
@@ -78,9 +76,8 @@ deploy() {
 
     echo -e "${GREEN}Deploying new version of $service to $color${NC}"
 
-
-    docker-compose up -d --no-deps --build "$service-$color"
-
+    # Use the correct compose file based on color
+    docker compose -f docker-compose.$color.yml up -d --no-deps --build "$service-$color"
 
     if ! check_health "$service" "$color"; then
         echo -e "${RED}Deployment failed! New version is not healthy.${NC}"
@@ -91,31 +88,29 @@ deploy() {
     return 0
 }
 
-
 rollback() {
     local service=$1
     local color=$2
 
     echo -e "${RED}Rolling back $service to $color${NC}"
     
-
+    # Export the environment variable for nginx during rollback
+    export CURRENT_ENV=$color
+    
     switch_color "$service"
     
     echo -e "${GREEN}Rollback completed${NC}"
 }
 
-
 main() {
     local service=$1
-
 
     if [[ ! "$service" =~ ^(frontend|backend)$ ]]; then
         echo -e "${RED}Invalid service name. Use 'frontend' or 'backend'${NC}"
         exit 1
-    fi
+    }
 
-
-    local current_color=$(docker-compose ps | grep "$service-" | grep "Up" | awk '{print $1}' | cut -d'-' -f2)
+    local current_color=$(docker compose ps | grep "$service-" | grep "Up" | awk '{print $1}' | cut -d'-' -f2)
     local target_color
 
     if [ "$current_color" == "blue" ]; then
@@ -124,13 +119,11 @@ main() {
         target_color="blue"
     fi
 
-
     if ! deploy "$service" "$target_color"; then
         echo -e "${RED}Deployment failed. Starting rollback...${NC}"
         rollback "$service" "$current_color"
         exit 1
     fi
-
 
     if ! switch_color "$service"; then
         echo -e "${RED}Failed to switch traffic. Starting rollback...${NC}"
@@ -141,12 +134,9 @@ main() {
     echo -e "${GREEN}Deployment of $service completed successfully${NC}"
 }
 
-
 if [ $# -eq 0 ]; then
     echo -e "${RED}Please provide a service name (frontend or backend)${NC}"
     exit 1
 fi
 
-
 main $1
-
