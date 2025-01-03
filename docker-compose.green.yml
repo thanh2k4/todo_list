@@ -6,9 +6,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     environment:
-      - CURRENT_ENV=green
-    entrypoint: >
-      sh -c " sed -i 's/\${CURRENT_ENV}/$CURRENT_ENV/g' /etc/nginx/nginx.conf && nginx -g 'daemon off;' "
+      - CURRENT_ENV="green"
     depends_on:
       - frontend-green
       - backend-green
