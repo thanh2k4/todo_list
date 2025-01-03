@@ -113,7 +113,7 @@ jobs:
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
         
         # Wait for all services in the new environment to be healthy
-        timeout 120s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        timeout 300s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
         # Update Nginx configuration
         sed -i "s/\${CURRENT_ENV}/${CURRENT_ENV}/g" nginx.conf
         sed -i "s/\${CURRENT_ENV}/${NEXT_ENV}/g" nginx.conf
@@ -123,7 +123,7 @@ jobs:
         
         # Reload Nginx configuration
         docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
-        
+
     - name: Update current environment
       if: success()
       env:
