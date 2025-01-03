@@ -12,6 +12,12 @@ services:
     depends_on:
       - frontend-blue
       - backend-blue
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/" ]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
   frontend-blue:
     build:
@@ -19,8 +25,14 @@ services:
       dockerfile: Dockerfile
     image: thanh2k4/todo_list-frontend:blue
     user: root
-    expose:
-      - "80"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80" ]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
   backend-blue:
     build:
@@ -36,6 +48,12 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     depends_on:
       - db
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
   db:
     image: mysql:8.0
@@ -45,6 +63,12 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "--host=localhost", "--user=root", "--password=${MYSQL_ROOT_PASSWORD}" ]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
 volumes:
   mysql-data:

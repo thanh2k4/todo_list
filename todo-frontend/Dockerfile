@@ -11,7 +11,7 @@ FROM nginx:alpine3.20
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 RUN chown -R nginx:nginx /usr/share/nginx/html && chmod -R 755 /usr/share/nginx/html 
-EXPOSE 80
+EXPOSE 3000
 USER nginx
 CMD ["nginx", "-g", "daemon off;"]
 

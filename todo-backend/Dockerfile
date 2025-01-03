@@ -7,13 +7,13 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # Deploy stage
-FROM openjdk:21-jdk-slim
+FROM openjdk:21-jdk-buster
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 RUN addgroup --system --gid 1001 appuser && \
     adduser --system --uid 1001 --ingroup appuser appuser
 RUN chown appuser:appuser app.jar
 USER appuser
-EXPOSE 8080
+EXPOSE 5000
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
 
