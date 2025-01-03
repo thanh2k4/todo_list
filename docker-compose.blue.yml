@@ -7,10 +7,11 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     environment:
       - CURRENT_ENV=blue
+    entrypoint: >
+      sh -c " sed -i 's/\${CURRENT_ENV}/$CURRENT_ENV/g' /etc/nginx/nginx.conf && nginx -g 'daemon off;' "
     depends_on:
       - frontend-blue
       - backend-blue
-
   frontend-blue:
     build:
       context: ./todo-frontend
@@ -35,7 +36,7 @@ services:
       - db
 
   db:
-    image: mysql:latest
+    image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0}
       MYSQL_DATABASE: todo_list
