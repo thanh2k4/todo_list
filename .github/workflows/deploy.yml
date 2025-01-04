@@ -90,8 +90,9 @@ jobs:
 
     - name: Download deployment environment artifact
       id: download-env
-      uses: actions/download-artifact@v4
+      uses: dawidd6/action-download-artifact@v7
       with:
+        workflow: latest
         name: deployment-environment
       continue-on-error: true
 
