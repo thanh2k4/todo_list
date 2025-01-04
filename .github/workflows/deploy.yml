@@ -92,7 +92,7 @@ jobs:
       id: download-env
       uses: dawidd6/action-download-artifact@v7
       with:
-        workflow: latest
+        workflow: CI/CD Pipeline
         name: deployment-environment
       continue-on-error: true
 
