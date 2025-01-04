@@ -115,7 +115,7 @@ jobs:
 
         # Copy updated nginx.conf to the container
         docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
-        
+        docker ps
         # Reload Nginx configuration
         docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
 
