@@ -101,13 +101,13 @@ jobs:
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
         CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        # DB_USER: ${{ secrets.DB_USER }}
+        # DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        # MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
       run: |
-        echo $DB_USER > todo-backend/.env
-        echo $DB_PASSWORD >> todo-backend/.env
-        echo $MYSQL_ROOT_PASSWORD >> todo-backend/.env
+        # echo $DB_USER > todo-backend/.env
+        # echo $DB_PASSWORD >> todo-backend/.env
+        # echo $MYSQL_ROOT_PASSWORD >> todo-backend/.env
         
         # Start the new environment
         docker compose up --remove-orphans -d
