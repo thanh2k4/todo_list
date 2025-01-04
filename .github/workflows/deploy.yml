@@ -117,10 +117,10 @@ jobs:
         # Wait for all services in the new environment to be healthy
         timeout 120s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
         # Update Nginx configuration
-        sed -i "s/server frontend-\$CURRENT_ENV-1:3000;/server frontend-$CURRENT_ENV-1:3000 backup;/" nginx.conf
-        sed -i "s/server frontend-\$NEXT_ENV-1:3000 backup;/server frontend-$NEXT_ENV-1:3000;/" nginx.conf
-        sed -i "s/server backend-\$CURRENT_ENV-1:8080;/server backend-$CURRENT_ENV-1:8080 backup;/" nginx.conf
-        sed -i "s/server backend-\$NEXT_ENV-1:8080 backup;/server backend-$NEXT_ENV-1:8080;/" nginx.conf
+        sed -i "s/server frontend-\$CURRENT_ENV:3000;/server frontend-$CURRENT_ENV:3000 backup;/" nginx.conf
+        sed -i "s/server frontend-\$NEXT_ENV:3000 backup;/server frontend-$NEXT_ENV:3000;/" nginx.conf
+        sed -i "s/server backend-\$CURRENT_ENV:8080;/server backend-$CURRENT_ENV:8080 backup;/" nginx.conf
+        sed -i "s/server backend-\$NEXT_ENV:8080 backup;/server backend-$NEXT_ENV:8080;/" nginx.conf
 
         # Copy updated nginx.conf to the container
         docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
@@ -146,10 +146,10 @@ jobs:
         timeout 120s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
 
         # Revert Nginx configuration
-        sed -i "s/server frontend-\$CURRENT_ENV-1:3000;/server frontend-$CURRENT_ENV-1:3000 backup;/" nginx.conf
-        sed -i "s/server frontend-\$NEXT_ENV-1:3000 backup;/server frontend-$NEXT_ENV-1:3000;/" nginx.conf
-        sed -i "s/server backend-\$CURRENT_ENV-1:8080;/server backend-$CURRENT_ENV-1:8080 backup;/" nginx.conf
-        sed -i "s/server backend-\$NEXT_ENV-1:8080 backup;/server backend-$NEXT_ENV-1:8080;/" nginx.conf
+        sed -i "s/server frontend-\$CURRENT_ENV:3000;/server frontend-$CURRENT_ENV:3000 backup;/" nginx.conf
+        sed -i "s/server frontend-\$NEXT_ENV:3000 backup;/server frontend-$NEXT_ENV:3000;/" nginx.conf
+        sed -i "s/server backend-\$CURRENT_ENV:8080;/server backend-$CURRENT_ENV:8080 backup;/" nginx.conf
+        sed -i "s/server backend-\$NEXT_ENV:8080 backup;/server backend-$NEXT_ENV:8080;/" nginx.conf
 
         
         # Copy updated nginx.conf to the container
