@@ -84,19 +84,31 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Download deployment environment artifact
+      id: download-env
+      uses: actions/download-artifact@v4
+      with:
+        name: deployment-environment
+      continue-on-error: true
+
     - name: Determine deployment environment
-      id: deployment
+      id: set-env
       run: |
-        CURRENT_ENV=$([ -f current_env.txt ] && cat current_env.txt || echo "blue")
+        if [ -f deployment-environment ]; then
+          CURRENT_ENV=$(cat deployment-environment)
+        else
+          CURRENT_ENV="blue"
         NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
         echo "current_env=$CURRENT_ENV" >> $GITHUB_OUTPUT
         echo "next_env=$NEXT_ENV" >> $GITHUB_OUTPUT
+
     - name: Build and push Docker images
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
       run: |
         docker compose -f docker-compose.$NEXT_ENV.yml build
         docker compose -f docker-compose.$NEXT_ENV.yml push
+
     - name: Deploy to server
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
@@ -125,7 +137,12 @@ jobs:
       env:
         NEXT_ENV: ${{ steps.deployment.outputs.next_env }}
       run: |
-        echo $NEXT_ENV > current_env.txt
+        echo $NEXT_ENV > deployment-environment
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-environment
+        path: deployment-environment
+        
     - name: Rollback on failure
       if: failure()
       env:
@@ -149,6 +166,11 @@ jobs:
         
         # Reload Nginx configuration
         docker compose -f docker-compose.$CURRENT_ENV.yml exec -T nginx nginx -s reload
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-environment
+        path: deployment-environment
+
     - name: Clean up old environment
       if: success()
       env:
