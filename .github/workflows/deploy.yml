@@ -105,6 +105,7 @@ jobs:
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
       run: |
+        touch .env
         echo "DB_USER=$DB_USER" >> .env
         echo "DB_PASSWORD=$DB_PASSWORD" >> .env
         echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
