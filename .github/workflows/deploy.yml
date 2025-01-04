@@ -110,7 +110,7 @@ jobs:
         echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
         
         # Start the new environment
-        docker compose up --remove-
+        docker compose up --remove-orphans
         docker ps
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
 
