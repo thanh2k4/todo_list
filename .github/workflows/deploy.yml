@@ -103,7 +103,6 @@ jobs:
         CURRENT_ENV: ${{ steps.deployment.outputs.current_env }}
       run: |
         # Start the new environment
-
         docker compose -f docker-compose.$NEXT_ENV.yml up -d
 
         # Wait for all services in the new environment to be healthy
