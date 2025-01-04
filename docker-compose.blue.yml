@@ -39,8 +39,8 @@ services:
       context: ./todo-backend
       dockerfile: Dockerfile
     image: thanh2k4/todo_list-backend:blue
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
     environment:
       DB_URL: ${DB_URL:-mysql://db:3306/todo_list}
       DB_USERNAME: ${MYSQL_USER:-root}
