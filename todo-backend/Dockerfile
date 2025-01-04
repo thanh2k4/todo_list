@@ -14,6 +14,6 @@ RUN addgroup --system --gid 1001 appuser && \
     adduser --system --uid 1001 --ingroup appuser appuser
 RUN chown appuser:appuser app.jar
 USER appuser
-EXPOSE 5000
+EXPOSE 8080
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
 

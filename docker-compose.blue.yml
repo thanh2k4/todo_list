@@ -26,7 +26,7 @@ services:
     image: thanh2k4/todo_list-frontend:blue
     user: root
     ports:
-      - "3001:3000"
+      - "3000:80"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:80" ]
       interval: 30s
