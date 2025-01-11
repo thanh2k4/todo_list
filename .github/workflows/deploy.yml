@@ -189,6 +189,10 @@ jobs:
       run: |
         docker compose -f docker-compose.$CURRENT_ENV.yml down
 
+    - name: Install Heroku CLI
+      run: |
+        curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  
     - name: Deploy Backend to Heroku
       if: success()
       uses: akhileshns/heroku-deploy@v3.13.15
