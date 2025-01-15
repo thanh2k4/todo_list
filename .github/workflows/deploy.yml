@@ -107,6 +107,7 @@ jobs:
         NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
         echo "current_env=$CURRENT_ENV" >> $GITHUB_OUTPUT
         echo "next_env=$NEXT_ENV" >> $GITHUB_OUTPUT
+      continue-on-error: true
 
     - name: Build and push Docker images
       env:
@@ -126,6 +127,7 @@ jobs:
         password : ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
+          whoiam
           docker pull ${{ secrets.DOCKER_USERNAME }}/todo_list-backend:$NEXT_ENV
           docker pull ${{ secrets.DOCKER_USERNAME }}/todo_list-frontend:$NEXT_ENV
 
@@ -173,7 +175,7 @@ jobs:
         password : ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-        
+
           docker compose -f docker-compose.$CURRENT_ENV.yml up -d
           
           # Wait for Nginx container to be ready
