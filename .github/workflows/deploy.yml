@@ -29,7 +29,6 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
@@ -53,7 +52,6 @@ jobs:
         key: ${{ runner.os }}-node-${{ hashFiles('**/todo-frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
-
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -65,7 +63,6 @@ jobs:
         npm install
         npm run build
         npm test
-
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -78,7 +75,6 @@ jobs:
         mkdir -p ~/.docker/cli-plugins/
         curl -SL "https://github.com/docker/compose/releases/download/$LATEST_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o ~/.docker/cli-plugins/docker-compose
         chmod +x ~/.docker/cli-plugins/docker-compose
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -107,54 +103,38 @@ jobs:
         NEXT_ENV=$([[ $CURRENT_ENV == "blue" ]] && echo "green" || echo "blue")
         echo "current_env=$CURRENT_ENV" >> $GITHUB_OUTPUT
         echo "next_env=$NEXT_ENV" >> $GITHUB_OUTPUT
-      continue-on-error: true
-
     - name: Build and push Docker images
       env:
         NEXT_ENV: ${{ steps.set-env.outputs.next_env }}
       run: |
         docker compose -f docker-compose.$NEXT_ENV.yml build
         docker compose -f docker-compose.$NEXT_ENV.yml push
-
     - name: Deploy to server
       env:
         NEXT_ENV: ${{ steps.set-env.outputs.next_env }}
         CURRENT_ENV: ${{ steps.set-env.outputs.current_env }}
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{secrets.SERVER_USER }}
-        key : ${{ secrets.SERVER_KEY }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/todo_list-backend:$NEXT_ENV
-          docker pull ${{ secrets.DOCKER_USERNAME }}/todo_list-frontend:$NEXT_ENV
-
-          # Start the new environment
-          docker compose -f docker-compose.$NEXT_ENV.yml up -d
-
-          # Wait for all services in the new environment to be healthy
-          timeout 120s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
-          
-          # Update Nginx configuration
-          sed -i "s/server frontend-$CURRENT_ENV:3000;/server frontend-$CURRENT_ENV:3000 backup;/" nginx.conf
-          sed -i "s/server frontend-$NEXT_ENV:3000 backup;/server frontend-$NEXT_ENV:3000;/" nginx.conf
-          sed -i "s/server backend-$CURRENT_ENV:8080;/server backend-$CURRENT_ENV:8080 backup;/" nginx.conf
-          sed -i "s/server backend-$NEXT_ENV:8080 backup;/server backend-$NEXT_ENV:8080;/" nginx.conf
-
-          # Copy updated nginx.conf to the container
-          docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
-          docker compose -f docker-compose.$CURRENT_ENV.yml up -d
-          # Reload Nginx configuration
-          docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
-
+      run: |
+        # Start the new environment
+        docker compose -f docker-compose.$NEXT_ENV.yml up -d
+        # Wait for all services in the new environment to be healthy
+        timeout 120s bash -c 'until docker compose -f docker-compose.$NEXT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        
+        # Update Nginx configuration
+        sed -i "s/server frontend-$CURRENT_ENV:3000;/server frontend-$CURRENT_ENV:3000 backup;/" nginx.conf
+        sed -i "s/server frontend-$NEXT_ENV:3000 backup;/server frontend-$NEXT_ENV:3000;/" nginx.conf
+        sed -i "s/server backend-$CURRENT_ENV:8080;/server backend-$CURRENT_ENV:8080 backup;/" nginx.conf
+        sed -i "s/server backend-$NEXT_ENV:8080 backup;/server backend-$NEXT_ENV:8080;/" nginx.conf
+        # Copy updated nginx.conf to the container
+        docker compose -f docker-compose.$NEXT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
+        docker compose -f docker-compose.$CURRENT_ENV.yml up -d
+        # Reload Nginx configuration
+        docker compose -f docker-compose.$NEXT_ENV.yml exec -T nginx nginx -s reload
     - name: Update current environment
       if: success()
       env:
         NEXT_ENV: ${{ steps.set-env.outputs.next_env }}
       run: |
         echo $NEXT_ENV > deployment-environment
-
     - name: Upload deployment environment artifact
       if: success()
       uses: actions/upload-artifact@v4
@@ -167,31 +147,22 @@ jobs:
       env:
         CURRENT_ENV: ${{ steps.set-env.outputs.current_env }}
         NEXT_ENV: ${{ steps.set-env.outputs.next_env }}
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{secrets.SERVER_USER }}
-        password : ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-
-          docker compose -f docker-compose.$CURRENT_ENV.yml up -d
-          
-          # Wait for Nginx container to be ready
-          timeout 120s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
-
-          # Revert Nginx configuration
-          sed -i "s/server frontend-$CURRENT_ENV:3000 backup;/server frontend-$CURRENT_ENV:3000;/" nginx.conf
-          sed -i "s/server frontend-$NEXT_ENV:3000;/server frontend-$NEXT_ENV:3000 backup;/" nginx.conf
-          sed -i "s/server backend-$CURRENT_ENV:8080 backup;/server backend-$CURRENT_ENV:8080;/" nginx.conf
-          sed -i "s/server backend-$NEXT_ENV:8080;/server backend-$NEXT_ENV:8080 backup;/" nginx.conf
-          
-          # Copy updated nginx.conf to the container
-          docker compose -f docker-compose.$CURRENT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
-          
-          # Reload Nginx configuration
-          docker compose -f docker-compose.$CURRENT_ENV.yml exec -T nginx nginx -s reload
-
+      run: |
+        docker compose -f docker-compose.$CURRENT_ENV.yml up -d
+        
+        # Wait for Nginx container to be ready
+        timeout 120s bash -c 'until docker compose -f docker-compose.$CURRENT_ENV.yml ps | grep -q healthy; do sleep 2; done'
+        # Revert Nginx configuration
+        sed -i "s/server frontend-$CURRENT_ENV:3000 backup;/server frontend-$CURRENT_ENV:3000;/" nginx.conf
+        sed -i "s/server frontend-$NEXT_ENV:3000;/server frontend-$NEXT_ENV:3000 backup;/" nginx.conf
+        sed -i "s/server backend-$CURRENT_ENV:8080 backup;/server backend-$CURRENT_ENV:8080;/" nginx.conf
+        sed -i "s/server backend-$NEXT_ENV:8080;/server backend-$NEXT_ENV:8080 backup;/" nginx.conf
+        
+        # Copy updated nginx.conf to the container
+        docker compose -f docker-compose.$CURRENT_ENV.yml cp nginx.conf nginx:/etc/nginx/nginx.conf
+        
+        # Reload Nginx configuration
+        docker compose -f docker-compose.$CURRENT_ENV.yml exec -T nginx nginx -s reload
     - name: Upload rollback environment artifact
       if: failure()
       uses: actions/upload-artifact@v4
@@ -203,24 +174,5 @@ jobs:
       if: success()
       env:
         CURRENT_ENV: ${{ steps.set-env.outputs.current_env }}
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{secrets.SERVER_USER }}
-        password : ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-          docker compose -f docker-compose.$CURRENT_ENV.yml down
-
-    - name: Install Heroku CLI
       run: |
-        curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
-  
-    - name: Deploy Backend to Heroku
-      if: success()
-      uses: akhileshns/heroku-deploy@v3.13.15
-      with:
-        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-        heroku_app_name: "todo-backend-thanh2k4"
-        heroku_email: "nvthanh12102004@gmail.com"
-        appdir: "todo-backend"
+        docker compose -f docker-compose.$CURRENT_ENV.yml down
